@@ -1,0 +1,8 @@
+<div>
+    <h2>{{title}}</h2>
+    <div *ngIf="showStatus"><h1>{{status}}</h1></div>
+    <br>
+    <div *ngIf="showButton">
+        <button (click)="getStatus($event)">Process Loan</button>
+    </div>
+</div>

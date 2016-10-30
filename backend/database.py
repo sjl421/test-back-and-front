@@ -20,11 +20,11 @@ class Database:
         """Check if the business has owners."""
         return len(self.database[tax_id]['owners']) > 0
 
-    def existsOwner(self, tax_id, owner_id):
+    def existsOwner(self, tax_id, ssnumber):
         """Check if the owner exists."""
         if not self.hasOwners(tax_id):
             raise DatabaseException('The business doesn\'t have any owner')
-        return owner_id in self.database[tax_id]['owners']
+        return ssnumber in self.database[tax_id]['owners']
 
     def storeBusiness(self, business):
         """Store a new business in the database."""
@@ -45,12 +45,12 @@ class Database:
         if not self.existsBusiness(tax_id):
             raise DatabaseException('Business doesn\'t exists')
         if self.hasOwners(tax_id) and \
-           self.existsOwner(tax_id, owner['owner_id']):
+           self.existsOwner(tax_id, owner['ssnumber']):
             raise DatabaseException('The owner already exists')
-        self.database[tax_id]['owners'][owner['owner_id']] = owner
-        return owner['owner_id']
+        self.database[tax_id]['owners'][owner['ssnumber']] = owner
+        return owner['ssnumber']
 
-    def getOwner(self, tax_id, owner_id):
+    def getOwner(self, tax_id, ssnumber):
         """Get an owner by the owner id."""
         pass
 

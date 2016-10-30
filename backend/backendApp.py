@@ -12,7 +12,26 @@ from settings import config
 from database import Database
 
 
-class VersionHandler(tornado.web.RequestHandler):
+class BaseHandler(tornado.web.RequestHandler):
+    """Base class with header definition."""
+
+    def set_default_headers(self):
+        """Set the default headers."""
+        self.set_header("Access-Control-Allow-Origin", "*")
+        self.set_header("Access-Control-Allow-Methods",
+                        "GET,PUT,POST, OPTIONS")
+        self.set_header("Access-Control-Allow-Headers",
+                        ("Content-Type, Depth, User-Agent, X-File-Size, "
+                         "X-Requested-With, X-Requested-By, "
+                         "If-Modified-Since, X-File-Name, Cache-Control"))
+        self.set_header('Content-Type', 'application/json')
+
+    def get_body_params(self):
+        """Return the params in the request body."""
+        return tornado.escape.json_decode(self.request.body)
+
+
+class VersionHandler(BaseHandler):
     """Version handler."""
 
     def get(self):
@@ -21,7 +40,7 @@ class VersionHandler(tornado.web.RequestHandler):
         self.write(response)
 
 
-class GetLoanStatus(tornado.web.RequestHandler):
+class GetLoanStatus(BaseHandler):
     """This module does the backend logic for the test app."""
 
     def get(self, business_id):
@@ -36,7 +55,7 @@ class GetLoanStatus(tornado.web.RequestHandler):
             return None
 
         business = db.getBusiness(business_id)
-        amount = business['ammount']
+        amount = int(business['amount'])
         if amount > config.BASE_AMOUNT:
             loan_status = config.status['DECLINED']
         elif amount == config.BASE_AMOUNT:
@@ -50,13 +69,14 @@ class GetLoanStatus(tornado.web.RequestHandler):
         self.write(response)
 
 
-class AddOwnerToBusiness(tornado.web.RequestHandler):
+class AddOwnerToBusiness(BaseHandler):
     """Add a new owner to the business."""
 
     def post(self):
         """Post the new owner."""
         db = Database()
-        business_id = self.get_body_argument('business_id')
+        owner = self.get_body_params()
+        business_id = owner['businessId']
         if not db.hasBusiness():
             self.set_status(404, reason='There is no business created')
             return None
@@ -65,67 +85,70 @@ class AddOwnerToBusiness(tornado.web.RequestHandler):
                             'please create it first')
             return None
 
-        sec_number = self.get_body_argument('security_number')
-        name = self.get_body_argument('name')
-        email = self.get_body_argument('email')
-        address = self.get_body_argument('address')
-        city = self.get_body_argument('city')
-        state = self.get_body_argument('state')
-        postal_code = self.get_body_argument('postal_code')
-
-        owner = {
-            'owner_id': sec_number,
-            'name': name,
-            'email': email,
-            'address': address,
-            'city': city,
-            'state': state,
-            'postal_code': postal_code
-        }
-
         try:
             db.storeOwner(business_id, owner)
-            response = {'owner_id': sec_number}
+            response = {'ssnumber': owner['ssnumber']}
             self.write(response)
         except Exception, e:
+            logging.critical(str(e))
             self.set_status(404, reason=str(e))
             return None
 
+    def options(self):
+        """Option method."""
+        pass
 
-class AddBusiness(tornado.web.RequestHandler):
+
+class AddBusiness(BaseHandler):
     """Create a new business."""
 
     def post(self):
         """Post the new business."""
         db = Database()
-        tax_id = self.get_body_argument('tax_id')
-        name = self.get_body_argument('name')
-        address = self.get_body_argument('address')
-        city = self.get_body_argument('city')
-        state = self.get_body_argument('state')
-        postal_code = self.get_body_argument('postal_code')
-        ammount = self.get_body_argument('ammount')
+        business = self.get_body_params()
 
-        business = {
-            'tax_id': tax_id,
-            'name': name,
-            'address': address,
-            'city': city,
-            'state': state,
-            'postal_code': postal_code,
-            'ammount': ammount
-        }
+        if db.existsBusiness(business['tax_id']):
+            self.set_status(404, reason='The business already exists')
+            return None
 
-        db.storeBusiness(business)
-        response = {'tax_id': tax_id}
-        self.write(response)
+        try:
+            db.storeBusiness(business)
+            response = {'tax_id': business['tax_id']}
+            self.write(response)
+        except Exception, e:
+            logging.critical(str(e))
+            self.set_status(404, reason=str(e))
+            return None
+
+    def options(self):
+        """Option method."""
+        pass
+
+
+class GetBusiness(BaseHandler):
+    """Get a stored business."""
+
+    def get(self, business_id):
+        """Search and return the business."""
+        db = Database()
+
+        if not db.existsBusiness(business_id):
+            self.write({'tax_id': None})
+        else:
+            business = db.getBusiness(business_id)
+            self.write({'tax_id': business['tax_id']})
+
+    def options(self):
+        """Option method."""
+        pass
 
 
 application = tornado.web.Application([
     (r"/api/getloanstatus/([0-9]+)", GetLoanStatus),
     (r"/api/addowner/", AddOwnerToBusiness),
     (r"/api/addbusiness/", AddBusiness),
-    (r"/api/version", VersionHandler)
+    (r"/api/getbusiness/([0-9]+)", GetBusiness),
+    (r"/api/version", VersionHandler),
 ])
 
 

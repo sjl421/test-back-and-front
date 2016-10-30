@@ -116,9 +116,9 @@ npm-debug.log
 testem.log
 /typings
 
-# e2e
-/e2e/*.js
-/e2e/*.map
+# src
+/frontend/app/*.js
+/frontend/app/*.map
 
 #System Files
 .DS_Store

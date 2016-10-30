@@ -1,0 +1,17 @@
+<div>
+    <h2>{{title}}</h2>
+    <form [formGroup]="businessForm" (ngSubmit)="doSave($event)">
+        <input (focusout)="validateBusiness($event)" [formControl]="businessForm.controls['tax_id']" type="text" name="tax_id" placeholder="Tax Id">
+        <input [formControl]="businessForm.controls['name']" type="text" name="name" placeholder="Business Name">
+        <input [formControl]="businessForm.controls['address']" type="text" name="address" placeholder="Address">
+        <input [formControl]="businessForm.controls['city']" type="text" name="city" placeholder="City">
+        <input [formControl]="businessForm.controls['state']" type="text" name="state" placeholder="State">
+        <input [formControl]="businessForm.controls['postal_code']" type="text" name="postal_code" placeholder="Postal Code">
+        <input [formControl]="businessForm.controls['amount']" type="text" name="amount" placeholder="Requested Amount">
+        <button type="submit">Save</button>
+    </form>
+    <br>
+    {{errorMessage}}
+    <br>
+    <Owner *ngIf="showOwnerForm" [businessId]="businessId"></Owner>
+</div>
